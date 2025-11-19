@@ -111,28 +111,34 @@
     <div class="container mx-auto p-4 flex flex-col gap-6 flex-grow relative">
         
         <div id="trading-views">
-            <div class="bg-[var(--bg-dark)] p-5 rounded-xl border border-[var(--bg-med)] shadow-lg mb-6">
-                <div class="flex flex-wrap justify-between items-end mb-4 gap-4">
+            <div class="bg-[var(--bg-dark)] p-5 rounded-xl border border-[var(--bg-med)] shadow-lg mb-6 transition-all">
+                <div class="flex flex-wrap justify-between items-center mb-4 gap-4 border-b border-[var(--bg-med)] pb-4">
                     <div>
                         <h2 class="text-lg font-semibold text-white">Filters</h2>
                         <p id="last-updated" class="text-xs text-gray-500">Live Data</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs uppercase text-gray-500 font-bold">Highlight Profit ></span>
-                        <input type="text" id="highlight-threshold" class="custom-input w-24 px-2 py-1 rounded text-sm" placeholder="10,000">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs uppercase text-gray-500 font-bold hidden sm:inline">Highlight Profit ></span>
+                            <input type="text" id="highlight-threshold" class="custom-input w-24 px-2 py-1 rounded text-sm" placeholder="10,000">
+                        </div>
+                        <button id="toggle-filters-btn" class="text-xs font-bold text-blue-400 hover:text-white uppercase tracking-wide cursor-pointer">Hide</button>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <input type="text" id="filter-name" class="custom-input w-full rounded p-2 text-sm" placeholder="Search Player...">
-                    <input type="text" id="filter-min-profit" class="custom-input w-full rounded p-2 text-sm" placeholder="Min Profit (e.g. 4,000)">
-                    <input type="text" id="filter-max-price" class="custom-input w-full rounded p-2 text-sm" placeholder="Max Price (e.g. 200,000)">
-                    <select id="filter-sort" class="custom-input w-full rounded p-2 text-sm cursor-pointer">
-                        <option value="newest">🕒 Newest First</option>
-                        <option value="profit">💰 Highest Profit</option>
-                        <option value="drop">📉 Biggest Drop %</option>
-                    </select>
+                
+                <div id="filter-content" class="transition-all duration-300">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <input type="text" id="filter-name" class="custom-input w-full rounded p-2 text-sm" placeholder="Search Player...">
+                        <input type="text" id="filter-min-profit" class="custom-input w-full rounded p-2 text-sm" placeholder="Min Profit (e.g. 4,000)">
+                        <input type="text" id="filter-max-price" class="custom-input w-full rounded p-2 text-sm" placeholder="Max Price (e.g. 200,000)">
+                        <select id="filter-sort" class="custom-input w-full rounded p-2 text-sm cursor-pointer">
+                            <option value="newest">🕒 Newest First</option>
+                            <option value="profit">💰 Highest Profit</option>
+                            <option value="drop">📉 Biggest Drop %</option>
+                        </select>
+                    </div>
+                    <div id="dynamic-filters" class="mt-4 pt-4 border-t border-[var(--bg-med)] empty:hidden"></div>
                 </div>
-                <div id="dynamic-filters" class="mt-4 pt-4 border-t border-[var(--bg-med)] empty:hidden"></div>
             </div>
 
             <div id="sell_zone-panel" class="tab-panel active grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
@@ -184,7 +190,7 @@
                             <table class="w-full text-sm text-left text-gray-400">
                                 <thead class="text-xs text-gray-200 uppercase bg-[var(--bg-med)]">
                                     <tr>
-                                        <th class="px-4 py-2">Player</th><th class="px-4 py-2">Buy</th><th class="px-4 py-2">Qty</th><th class="px-4 py-2">Actions</th>
+                                        <th class="px-4 py-2">Player</th><th class="px-4 py-2">Buy</th><th class="px-4 py-2">Qty</th><th class="px-4 py-2">Date</th><th class="px-4 py-2">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="active-trades-body"></tbody>
@@ -195,13 +201,13 @@
 
                     <div class="bg-[var(--bg-dark)] p-5 rounded-xl border border-[var(--bg-med)]">
                         <h3 class="font-bold text-white mb-4 flex justify-between">
-                            Sold History <span id="total-profit-display" class="text-sm font-mono text-green-400">TP: 0</span>
+                            Sold History <span id="total-profit-display" class="text-sm font-bold text-green-400">TP: 0</span>
                         </h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left text-gray-400">
                                 <thead class="text-xs text-gray-200 uppercase bg-[var(--bg-med)]">
                                     <tr>
-                                        <th class="px-4 py-2">Player</th><th class="px-4 py-2">Buy</th><th class="px-4 py-2">Sell</th><th class="px-4 py-2">Profit</th><th class="px-4 py-2"></th>
+                                        <th class="px-4 py-2">Player</th><th class="px-4 py-2">Buy</th><th class="px-4 py-2">Sell</th><th class="px-4 py-2">Profit</th><th class="px-4 py-2">Sold Date</th><th class="px-4 py-2"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="history-trades-body"></tbody>
@@ -289,13 +295,13 @@
                             <span class="text-gray-500 text-[10px] uppercase block">Drop</span>
                             <span data-id="drop" class="font-bold text-red-400 text-sm">0%</span>
                         </div>
-                        <div class="text-center">
+                        <div class="text-center stability-row">
                             <span class="text-gray-500 text-[10px] uppercase block">Stability</span>
                             <span data-id="cv" class="font-bold text-gray-300 text-sm">-</span>
                         </div>
                     </div>
 
-                    <div class="mt-auto pt-2 flex justify-between items-center">
+                    <div class="mt-auto pt-3 flex justify-between items-center">
                          <span class="text-xs font-bold text-gray-500 uppercase">Profit</span>
                          <span data-id="profit" class="text-2xl font-bold text-[var(--profit-color)] drop-shadow-sm">0</span>
                     </div>
@@ -362,17 +368,12 @@
             confModal: document.getElementById('confirm-modal'),
             confOk: document.getElementById('confirm-ok'),
             confCancel: document.getElementById('confirm-cancel'),
-            toastContainer: document.getElementById('toast-container')
+            toastContainer: document.getElementById('toast-container'),
+            filterToggle: document.getElementById('toggle-filters-btn'),
+            filterContent: document.getElementById('filter-content')
         };
 
-        // Rounding
-        function roundPrice(price) {
-            if (!price || price <= 0) return 0;
-            if (price <= 50000) return Math.round(price / 250) * 250;
-            if (price <= 100000) return Math.round(price / 500) * 500;
-            return Math.round(price / 1000) * 1000;
-        }
-        const formatNum = n => n ? roundPrice(n).toLocaleString() : '0';
+        const formatNum = n => n ? Math.round(n).toLocaleString() : '0';
         const cleanNum = s => parseFloat(s.toString().replace(/,/g, '')) || 0;
 
         function addCommas(input) {
@@ -395,6 +396,11 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
+
+        els.filterToggle.addEventListener('click', (e) => {
+            els.filterContent.classList.toggle('hidden');
+            e.target.textContent = els.filterContent.classList.contains('hidden') ? 'Show' : 'Hide';
+        });
 
         function renderDynamicFilters() {
             els.dynFilters.innerHTML = '';
@@ -495,7 +501,7 @@
             }).sort((a, b) => {
                 if(state.filters.sort === 'profit') return b.profit - a.profit;
                 if(state.filters.sort === 'drop') return b.dropPerc - a.dropPerc;
-                return b.timestamp - a.timestamp;
+                return b.foundTime - a.foundTime; 
             });
 
             const targetGrid = els.grid[state.activeTab];
@@ -645,11 +651,14 @@
             const histBody = document.getElementById('history-trades-body');
             activeBody.innerHTML = '';
             state.trades.forEach(t => {
+                // Added DATE column
+                const dateStr = new Date(t.id).toLocaleDateString();
                 activeBody.innerHTML += `
                     <tr class="border-b border-[var(--bg-med)]">
                         <td class="px-4 py-2 text-white">${t.name}</td>
                         <td class="px-4 py-2 font-sans">${t.buy.toLocaleString()}</td>
                         <td class="px-4 py-2 font-sans">${t.qty}</td>
+                        <td class="px-4 py-2 text-xs text-gray-500 font-sans">${dateStr}</td>
                         <td class="px-4 py-2 flex gap-2">
                             <button onclick="window.openSellModal(${t.id})" class="text-xs bg-green-600 text-white px-2 py-1 rounded">Sell</button>
                             <button onclick="window.triggerDelete(${t.id}, 'active')" class="text-xs bg-red-600 text-white px-2 py-1 rounded">X</button>
@@ -663,17 +672,20 @@
             let tp = 0;
             state.history.sort((a,b) => b.date - a.date).forEach(t => {
                 tp += t.profit;
+                // Added SOLD DATE column
+                const soldDateStr = new Date(t.date).toLocaleDateString();
                 histBody.innerHTML += `
                     <tr class="border-b border-[var(--bg-med)]">
                         <td class="px-4 py-2 text-white">${t.name}</td>
                         <td class="px-4 py-2 font-sans">${t.buy.toLocaleString()}</td>
                         <td class="px-4 py-2 font-sans">${t.sell.toLocaleString()}</td>
                         <td class="px-4 py-2 font-bold font-sans ${t.profit >= 0 ? 'text-green-500' : 'text-red-500'}">${t.profit.toLocaleString()}</td>
+                        <td class="px-4 py-2 text-xs text-gray-600 font-sans">${soldDateStr}</td>
                         <td class="px-4 py-2 flex justify-end"><button onclick="window.triggerDelete(${t.id}, 'history')" class="text-xs text-gray-500 hover:text-red-500 px-1">X</button></td>
                     </tr>`;
             });
             document.getElementById('total-profit-display').textContent = `TP: ${tp.toLocaleString()}`;
-            document.getElementById('total-profit-display').className = `text-sm font-mono font-bold ${tp >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            document.getElementById('total-profit-display').className = `text-sm font-bold font-sans ${tp >= 0 ? 'text-green-400' : 'text-red-400'}`;
         }
 
         document.getElementById('tax-header').addEventListener('click', () => document.getElementById('tax-calc').classList.toggle('minimized'));
