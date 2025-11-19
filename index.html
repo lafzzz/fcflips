@@ -91,9 +91,8 @@
                 <select id="nav-trading" class="nav-select">
                     <option value="" disabled>Select Trading...</option>
                     <option value="sell_zone" selected>Flux Flips</option>
-                    <option value="average">Below Avg Flips</option>
+                    <option value="average">Average Flips</option>
                     <option value="median">Median Flips</option>
-                    <option value="price_drop">Price Drop Flips</option>
                 </select>
             </div>
             <div class="hidden sm:block w-px h-10 bg-gray-800"></div>
@@ -144,7 +143,6 @@
             <div id="sell_zone-panel" class="tab-panel active grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
             <div id="average-panel" class="tab-panel grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
             <div id="median-panel" class="tab-panel grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
-            <div id="price_drop-panel" class="tab-panel grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"></div>
             
             <div id="no-deals" class="hidden py-24 flex flex-col items-center justify-center text-gray-500">
                 <div class="mb-4 p-4 bg-[var(--bg-dark)] rounded-full border border-[var(--bg-med)]">
@@ -270,7 +268,6 @@
                 </div>
                 <div class="p-4 flex-grow flex flex-col gap-3 bg-[var(--bg-dark)]">
                     <h3 data-id="name" class="text-center text-lg font-bold text-white truncate mb-1">Player</h3>
-                    
                     <div class="grid grid-cols-2 gap-2 text-center">
                         <div class="bg-[var(--bg-med)] p-2 rounded border border-gray-800">
                             <div class="text-[10px] text-gray-400 uppercase">Current</div>
@@ -281,7 +278,6 @@
                             <div data-id="target-price" class="text-lg font-bold text-blue-400">0</div>
                         </div>
                     </div>
-
                     <div class="grid grid-cols-2 gap-y-3 gap-x-2 text-sm mt-2 border-b border-[var(--bg-med)] pb-3">
                         <div class="text-center">
                             <span class="text-gray-500 text-[10px] uppercase block">24h Low</span>
@@ -295,12 +291,11 @@
                             <span class="text-gray-500 text-[10px] uppercase block">Drop</span>
                             <span data-id="drop" class="font-bold text-red-400 text-sm">0%</span>
                         </div>
-                        <div class="text-center">
+                        <div class="text-center stability-row">
                             <span class="text-gray-500 text-[10px] uppercase block">Stability</span>
                             <span data-id="cv" class="font-bold text-gray-300 text-sm">-</span>
                         </div>
                     </div>
-
                     <div class="mt-auto pt-2 flex justify-between items-center">
                          <span class="text-xs font-bold text-gray-500 uppercase">Profit</span>
                          <span data-id="profit" class="text-2xl font-bold text-[var(--profit-color)] drop-shadow-sm">0</span>
@@ -344,7 +339,6 @@
                 sell_zone: document.getElementById('sell_zone-panel'),
                 average: document.getElementById('average-panel'),
                 median: document.getElementById('median-panel'),
-                price_drop: document.getElementById('price_drop-panel')
             },
             tradingView: document.getElementById('trading-views'),
             checkerPanel: document.getElementById('price_checker-panel'),
@@ -373,14 +367,7 @@
             filterContent: document.getElementById('filter-content')
         };
 
-        // Rounding
-        function roundPrice(price) {
-            if (!price || price <= 0) return 0;
-            if (price <= 50000) return Math.round(price / 250) * 250;
-            if (price <= 100000) return Math.round(price / 500) * 500;
-            return Math.round(price / 1000) * 1000;
-        }
-        const formatNum = n => n ? roundPrice(n).toLocaleString() : '0';
+        const formatNum = n => n ? Math.round(n).toLocaleString() : '0';
         const cleanNum = s => parseFloat(s.toString().replace(/,/g, '')) || 0;
 
         function addCommas(input) {
@@ -441,27 +428,20 @@
             clone.querySelector('[data-id="link"]').href = deal.link;
 
             clone.querySelector('[data-id="current-price"]').textContent = formatNum(deal.currentPrice);
-            
-            // --- 2x2 GRID POPULATION ---
-            // Top Left: 24h Low
-            const lowEl = clone.querySelector('[data-id="low-24h"]');
-            if(deal.low_24h) lowEl.textContent = formatNum(deal.low_24h);
-            else lowEl.textContent = "-";
-
-            // Top Right: 6h Avg
-            const avgEl = clone.querySelector('[data-id="avg-6h"]');
-            avgEl.textContent = formatNum(deal.avg_6h);
-
-            // Bottom Left: Drop %
+            clone.querySelector('[data-id="avg-6h"]').textContent = formatNum(deal.avg_6h);
             clone.querySelector('[data-id="drop"]').textContent = `-${Math.abs(deal.dropPerc).toFixed(1)}%`;
-
-            // Bottom Right: Stability
+            
+            // Populate 2x2 Grid
+            const low24h = clone.querySelector('[data-id="low-24h"]');
+            low24h.textContent = deal.low_24h ? formatNum(deal.low_24h) : '-';
+            
             const cvEl = clone.querySelector('[data-id="cv"]');
             if(deal.cv) {
                 cvEl.textContent = `${(deal.cv*100).toFixed(1)}%`;
-                // Color Logic
-                if(deal.cv <= 0.05) cvEl.className = "font-bold text-green-400 text-sm"; // Green if <= 5%
-                else cvEl.className = "font-bold text-yellow-400 text-sm"; // Amber if > 5%
+                if(deal.cv <= 0.05) cvEl.className = "font-bold text-green-400 text-sm";
+                else cvEl.className = "font-bold text-yellow-400 text-sm";
+            } else {
+                cvEl.textContent = "-";
             }
 
             let targetPrice = deal.targetPrice;
@@ -474,14 +454,13 @@
                 const medKey = `med${state.filters.medianCount}`;
                 if(deal[medKey]) targetPrice = deal[medKey];
             }
-            else if(state.activeTab === 'price_drop') { label = "Prev Price"; }
 
             const profit = Math.round(targetPrice * 0.95 - deal.currentPrice);
 
             clone.querySelector('[data-id="target-label"]').textContent = label;
             clone.querySelector('[data-id="target-price"]').textContent = formatNum(targetPrice);
             clone.querySelector('[data-id="profit"]').textContent = formatNum(profit);
-
+            
             clone.querySelector('[data-id="time"]').textContent = new Date(deal.timestamp).toLocaleTimeString();
 
             clone.querySelector('.add-tracker-btn').addEventListener('click', (e) => {
@@ -490,7 +469,7 @@
                 showToast(`${deal.name} added to Trades`);
             });
 
-            return { card: clone, profit: profit }; 
+            return { card: clone, profit: profit, foundTime: deal.foundTime || deal.timestamp }; 
         }
 
         function render() {
@@ -516,7 +495,7 @@
             }).sort((a, b) => {
                 if(state.filters.sort === 'profit') return b.profit - a.profit;
                 if(state.filters.sort === 'drop') return b.dropPerc - a.dropPerc;
-                return b.timestamp - a.timestamp;
+                return b.foundTime - a.foundTime; 
             });
 
             const targetGrid = els.grid[state.activeTab];
@@ -532,7 +511,6 @@
             els.noDeals.classList.toggle('hidden', count > 0);
         }
 
-        // --- AUTO REFRESH ---
         setInterval(() => { if(state.deals) render(); }, 15000);
 
         els.navTrading.addEventListener('change', (e) => {
@@ -546,7 +524,6 @@
             render();
         });
 
-        // --- PRICE CHECKER ---
         document.getElementById('checker-search').addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             const resDiv = document.getElementById('checker-results');
@@ -560,8 +537,6 @@
                 const div = document.createElement('div');
                 div.className = "bg-[#21262d] p-4 rounded cursor-pointer hover:bg-[#30363d] flex flex-col gap-2 border border-gray-700 relative group";
                 
-                // Price Checker Stability Color Logic
-                const cvVal = p.cv ? (p.cv*100).toFixed(1)+'%' : '-';
                 const cvColor = (p.cv && p.cv <= 0.05) ? 'text-green-400' : 'text-yellow-400';
 
                 div.innerHTML = `
@@ -582,7 +557,7 @@
                     </div>
                     <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-400 mt-2 pt-2 border-t border-gray-700 font-sans">
                         <div class="flex justify-between"><span>6h Avg:</span> <span class="text-white">${formatNum(p.avg_6h)}</span></div>
-                        <div class="flex justify-between"><span>Stability:</span> <span class="font-bold ${cvColor}">${cvVal}</span></div>
+                        <div class="flex justify-between"><span>Stability:</span> <span class="font-bold ${cvColor}">${p.cv ? (p.cv*100).toFixed(1)+'%' : '-'}</span></div>
                         <div class="flex justify-between"><span>12h Avg:</span> <span class="text-white">${formatNum(p.avg_12h)}</span></div>
                         <div class="flex justify-between"><span>Sell Zone:</span> <span class="text-white">${formatNum(p.sell_zone)}</span></div>
                         <div class="flex justify-between"><span>Median (10):</span> <span class="text-white">${formatNum(p.med10)}</span></div>
@@ -604,7 +579,6 @@
             if(unique.length === 0) resDiv.innerHTML = `<div class="text-gray-500 p-2">No active players found.</div>`;
         });
 
-        // --- TRACKER ---
         function saveTrades() {
             localStorage.setItem('fc_trades', JSON.stringify(state.trades));
             localStorage.setItem('fc_trade_history', JSON.stringify(state.history));
@@ -670,11 +644,13 @@
             const histBody = document.getElementById('history-trades-body');
             activeBody.innerHTML = '';
             state.trades.forEach(t => {
+                const dateStr = new Date(t.id).toLocaleDateString();
                 activeBody.innerHTML += `
                     <tr class="border-b border-[var(--bg-med)]">
                         <td class="px-4 py-2 text-white">${t.name}</td>
                         <td class="px-4 py-2 font-sans">${t.buy.toLocaleString()}</td>
                         <td class="px-4 py-2 font-sans">${t.qty}</td>
+                        <td class="px-4 py-2 text-xs text-gray-500 font-sans">${dateStr}</td>
                         <td class="px-4 py-2 flex gap-2">
                             <button onclick="window.openSellModal(${t.id})" class="text-xs bg-green-600 text-white px-2 py-1 rounded">Sell</button>
                             <button onclick="window.triggerDelete(${t.id}, 'active')" class="text-xs bg-red-600 text-white px-2 py-1 rounded">X</button>
@@ -688,17 +664,19 @@
             let tp = 0;
             state.history.sort((a,b) => b.date - a.date).forEach(t => {
                 tp += t.profit;
+                const soldDateStr = new Date(t.date).toLocaleDateString();
                 histBody.innerHTML += `
                     <tr class="border-b border-[var(--bg-med)]">
                         <td class="px-4 py-2 text-white">${t.name}</td>
                         <td class="px-4 py-2 font-sans">${t.buy.toLocaleString()}</td>
                         <td class="px-4 py-2 font-sans">${t.sell.toLocaleString()}</td>
                         <td class="px-4 py-2 font-bold font-sans ${t.profit >= 0 ? 'text-green-500' : 'text-red-500'}">${t.profit.toLocaleString()}</td>
+                        <td class="px-4 py-2 text-xs text-gray-600 font-sans">${soldDateStr}</td>
                         <td class="px-4 py-2 flex justify-end"><button onclick="window.triggerDelete(${t.id}, 'history')" class="text-xs text-gray-500 hover:text-red-500 px-1">X</button></td>
                     </tr>`;
             });
             document.getElementById('total-profit-display').textContent = `TP: ${tp.toLocaleString()}`;
-            document.getElementById('total-profit-display').className = `text-sm font-mono font-bold ${tp >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            document.getElementById('total-profit-display').className = `text-sm font-bold font-sans ${tp >= 0 ? 'text-green-400' : 'text-red-400'}`;
         }
 
         document.getElementById('tax-header').addEventListener('click', () => document.getElementById('tax-calc').classList.toggle('minimized'));
